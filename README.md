@@ -57,7 +57,7 @@ The [ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/) is a b
 You will need to know the relative or full path to chromedriver.  On my system I put it into the project root:
 
 ```
-""./chromedriver"
+"./chromedriver"
 ```
 
 ### URLs
