@@ -57,7 +57,7 @@ def results2tsv(results:object) -> list:
             tsv_list.append("\t".join([url, 'INFO', 'No log msg found for this url']))
         else:
             for logmsg in results[url]:
-                tsv_row = "\t".join([url, logmsg['level'], logmsg['message']
+                tsv_row = "\t".join([url, logmsg['level'], logmsg['message'],
                     logmsg['source'], logmsg['mc_url'], logmsg['timestamp']])
                 tsv_list.append("\t".join(tsv_row))
 
