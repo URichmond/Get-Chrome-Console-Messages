@@ -1,12 +1,12 @@
-import os
-import json
-import sys
-import re
-import time
 import argparse
-import pprint
-from collections import namedtuple
+import json
+import os
+import re
+import sys
+import time
 from collections import OrderedDict
+from collections import namedtuple
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -14,7 +14,7 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 # TODO add doc strings
 
-def extract_mc_url(msg):
+def extract_mc_url(re_pattern, msg):
     '''return extracted mixed content url as string if found else empty string'''
     if "Mixed Content:" in msg:
         mc_url = "Error parsing message for mc url"
@@ -65,10 +65,9 @@ def cli_parse():
                         help="Input file of valid urls to check.  One url per line.")
     parser.add_argument('outfile', type=str, help="Writable file path and filename for results.")
 
-    ## how do I force one or the other format
     parser.add_argument("-j", "--json", help="Json formatted results file", action="store_true")
     parser.add_argument("-t", "--tsv",
-                        help="Tab separated values (tsv) formatted results file (default format",
+                        help="Tab separated values (tsv) formatted results file (default output_format",
                         action="store_true")
 
     parser.add_argument("-v", "--verbose",
@@ -76,52 +75,49 @@ def cli_parse():
                         action="store_true")
     parser.parse_args()
     args = parser.parse_args()
-    if args.json:
-        json = True
-    if args.tsv:
-        tsv = True
 
     if args.json and args.tsv:
         raise Exception("Program argument conflict - pick json or tsv file formats not both.")
 
+    output_format = 'tsv'
     if not args.json and not args.tsv:
-        # default format
-        format = 'tsv'
+        # default output_format
+        output_format = 'tsv'
 
     if args.json:
-        format = 'json'
+        output_format = 'json'
 
     if args.tsv:
-        format = 'tsv'
+        output_format = 'tsv'
 
-    Cli_args = namedtuple('Cli_args', 'chromebrowser chromedriver infile outfile format verbose')
-    return Cli_args(chromebrowser=args.chromebrowser,
+    cli_args = namedtuple('cli_args', 'chromebrowser chromedriver infile outfile output_format verbose')
+    return cli_args(chromebrowser=args.chromebrowser,
                     chromedriver=args.chromedriver,
                     infile=args.infile,
                     outfile=args.outfile,
-                    format=format,
+                    output_format=output_format,
                     verbose=args.verbose)
 
 
-def setup_chrome_options(Cli_args):
+def setup_chrome_options(cli_args):
     chrome_options = Options()
     chrome_options.add_argument("--headless")
-    chrome_options.binary_location = Cli_args.chromebrowser
+    chrome_options.binary_location = cli_args.chromebrowser
     # enable browser logging
     desired = DesiredCapabilities.CHROME
     desired['loggingPrefs'] = {'browser': 'ALL'}
     driver = webdriver.Chrome(desired_capabilities=desired,
-                              executable_path=os.path.abspath(Cli_args.chromedriver),
+                              executable_path=os.path.abspath(cli_args.chromedriver),
                               chrome_options=chrome_options)
     return driver
 
 
-def get_console_msgs(driver, urls, verbose):
+def get_console_msgs(driver, urls, re_pattern, verbose):
     results = OrderedDict()
     if verbose:
         print("Getting console log records from urls")
     for ct, url in enumerate(urls):
-        if len(url.strip()) == 0 or url.strip[:1] == "#":
+        if len(url.strip()) == 0 or url.strip()[:1] == "#":
             # ignore blank lines in file or comments in file
             continue
         # TODO try except for invalid urls
@@ -131,7 +127,7 @@ def get_console_msgs(driver, urls, verbose):
             timestamp = item['timestamp']
             item['timestamp'] = time.strftime('%Y-%m-%d %H:%M:%S',
                                               time.localtime(int(str(timestamp)[:-3])))
-            item['mc_url'] = extract_mc_url(item['message'])
+            item['mc_url'] = extract_mc_url(re_pattern, item['message'])
         if verbose:
             print(str(ct), url)
         results[url] = log
@@ -165,25 +161,24 @@ def tsv_output(output_file, results, verbose):
 
 
 def main():
-    verbose = False
     re_pattern = "(http:.*)(\'. This content should also be served over HTTPS\.|. This request has been blocked; the content must be served over HTTPS\.$)"
 
-    Cli_args = cli_parse()
+    cli_args = cli_parse()
 
-    driver = setup_chrome_options(Cli_args)
+    driver = setup_chrome_options(cli_args)
 
-    input_file = Cli_args.infile
-    output_file = Cli_args.outfile
-    output_format = Cli_args.format
-    verbose = Cli_args.verbose
+    input_file = cli_args.infile
+    output_file = cli_args.outfile
+    output_format = cli_args.output_format
+    verbose = cli_args.verbose
 
     if verbose:
-        print(Cli_args.verbose)
-        print(Cli_args.format)
-        print(Cli_args.chromebrowser)
-        print(Cli_args.chromedriver)
-        print(Cli_args.infile)
-        print(Cli_args.outfile)
+        print(cli_args.verbose)
+        print(cli_args.output_format)
+        print(cli_args.chromebrowser)
+        print(cli_args.chromedriver)
+        print(cli_args.infile)
+        print(cli_args.outfile)
 
     urls = list()
     if verbose:
@@ -192,7 +187,7 @@ def main():
         for line in infile:
             urls.append(line.strip())
 
-    results = get_console_msgs(driver, urls, verbose)
+    results = get_console_msgs(driver, urls, re_pattern, verbose)
 
     if output_format == 'tsv':
         tsv_output(output_file, results, verbose)
