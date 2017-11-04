@@ -30,20 +30,26 @@ __licence__ =       'http://www.gnu.org/licenses/gpl-3.0.en.html'
 
 
 
-def extract_mc_url(re_pattern, msg):
-    '''return extracted mixed content url as string if found else empty string'''
+def extract_mc_url(re_pattern:str, msg:str) -> str:
+    """
+    return extracted mixed content url as string if found else empty string
+    """
+
     if "Mixed Content:" in msg:
-        mc_url = "Error parsing message for mc url"
         results = re.search(re_pattern, msg)
         if results and (len(results.group()) > 1):
-            mc_url = results.group(1)
+            return(results.group(1))
+        else:
+            return "Error parsing message for mc url"
     else:
-        mc_url = ''
-        pass
-    return mc_url
+        return ""
 
 
-def results2tsv(results):
+def results2tsv(results:object) -> list:
+    """
+    Convert the results object to a list of strings.
+    """
+
     tsv_list = [("\t".join(['url', 'level', 'message', 'source', 'mc_url', 'timestamp']))]
 
     for url in results:
@@ -58,11 +64,13 @@ def results2tsv(results):
     return tsv_list
 
 
-def results2json(results):
-    return json.dumps(results)
+def cli_parse() -> tuple:
+    """
+    Parse the command line arguments using the argparse library.
 
+    returns -- a named tuple with the arguments resolved and named.
+    """
 
-def cli_parse():
     parser = argparse.ArgumentParser(description="Get headless chrome console log output from urls")
 
     parser.add_argument('chromebrowser', type=str, help="Full path to Chrome browser binary file.")
@@ -110,8 +118,7 @@ def setup_chrome_options(cli_args:object) -> object:
 
 def get_console_msgs(driver:object, urls:str, re_pattern, verbose:bool) -> collections.OrderedDict:
     results = collections.OrderedDict()
-    if verbose:
-        print("Getting console log records from urls")
+    verbose and print("Getting console log records from urls")
     for ct, url in enumerate(urls):
         if not url or url[1] == "#":
             continue
@@ -128,41 +135,45 @@ def get_console_msgs(driver:object, urls:str, re_pattern, verbose:bool) -> colle
             item['timestamp'] = time.strftime('%Y-%m-%d %H:%M:%S',
                                               time.localtime(int(str(timestamp)[:-3])))
             item['mc_url'] = extract_mc_url(re_pattern, item['message'])
-        if verbose:
-            print(str(ct), url)
+        verbose and print(str(ct), url)
         results[url] = log
     return results
 
 
-def program_exit(driver, verbose):
-    driver.close()
-    if verbose:
-        print("Program exit")
-    sys.exit(os.EX_OK)
+def json_output(output_file:str, results:object, verbose:bool) -> None:
+    """
+    Saves the console messages as JSON, perhaps verbosely.
 
+    output_file -- name of the output file.
+    results     -- an OrderedDict with the console messages.
+    verbose     -- perhaps
 
-def json_output(output_file:str, results:object, verbose:bool):
-    if verbose:
-        print("Preparing and saving json output")
-    json_str = results2json(results)
+    returns -- None
+    """
+    verbose and print("Preparing and saving json output")
     with open(output_file, 'w') as outfile:
-        outfile.write(json_str + "\n")
-        outfile.close()
+        outfile.write(json.dumps(results) + "\n")
 
 
-def tsv_output(output_file, results, verbose):
-    if verbose:
-        print("Preparing and saving tsv output")
-    tsv = results2tsv(results)
+def tsv_output(output_file:str, results:object, verbose:bool) -> None:
+    """
+    Saves the console messages as tab separated values.
+
+    output_file -- name of the output file.
+    results     -- an OrderedDict with the console messages.
+    verbose     -- perhaps
+
+    returns -- None
+    """
+    verbose and print("Preparing and saving tsv output")
+    tsv = "\n".join(results2tsv(results))
     with open(output_file, 'w') as outfile:
-        for row in tsv:
-            outfile.write(row + "\n")
-        outfile.close()
+        outfile.write(tsv)
 
 
 def main():
     re_pattern = "(http:.*)(\'. This content should also be served over HTTPS\.|. This request has been blocked; the content must be served over HTTPS\.$)"
-    re.compile(re_pattern)
+    x = re.compile(re_pattern)
 
     try:
         cli_args = cli_parse()
@@ -185,21 +196,18 @@ def main():
         print(cli_args.outfile)
 
     urls = []
-    if verbose:
-        print("Opening input file")
+    verbose and print("Opening input file")
     with open(input_file, 'r') as infile:
         urls = [ _.strip() for _ in infile.readlines() ]
 
     results = get_console_msgs(driver, urls, re_pattern, verbose)
 
-    if output_format == 'tsv':
-        tsv_output(output_file, results, verbose)
-    else:
-        # json
-        json_output(output_file, results, verbose)
+    convert = json_output if output_format == 'json' else tsv_output
+    convert(output_file, results, verbose)
 
-    program_exit(driver, verbose)
-    # End of Program
+    driver.close()
+    verbose and print("Program exit")
+    sys.exit(os.EX_OK)
 
 
 if __name__ == '__main__':
