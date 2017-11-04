@@ -4,9 +4,9 @@ You feed this program URLs and it returns console log messages in JSON or TSV fo
 
 ## Why?
 
-I had to move more than 180 websites from http to https (TLS) and whated to query popular page urls for [mixed content](https://developers.google.com/web/fundamentals/security/prevent-mixed-content/what-is-mixed-content) warnings after I completed the migration. 
+I had to move more than 180 websites from http to https (TLS) and wanted to query popular page urls for [mixed content](https://developers.google.com/web/fundamentals/security/prevent-mixed-content/what-is-mixed-content) warnings after I completed the migration.
  
-Chrome displays mixed content warning and errors, along with other messages in the [Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools/) Console pane.  That got me thinking about using headless chrome to get the warnings.  An added bonus is all types of warning and errors can be displayed as console messages. Now I have a tool that can autmatically get these messages for any web page.
+Chrome displays mixed content warning and errors, along with other messages in the [Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools/) Console pane.  That got me thinking about using headless chrome to get the warnings.  An added bonus is all types of warning and errors can be displayed as console messages. Now I have a tool that can automatically get these messages for any web page.
 
 ### Example Mixed Content Message
 ![Example Console Messages](./images/example_mixed_content.png?raw=true "Console Messages")
