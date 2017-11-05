@@ -197,7 +197,7 @@ def main():
 
     urls = []
     verbose and print("Opening input file")
-    with open(input_file, 'r') as infile:
+    with open(input_file) as infile:
         urls = [ _.strip() for _ in infile.readlines() ]
 
     results = get_console_msgs(driver, urls, re_pattern, verbose)
