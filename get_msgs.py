@@ -50,7 +50,7 @@ def results2tsv(results:object) -> list:
     Convert the results object to a list of strings.
     """
 
-    tsv_list = [("\t".join(['url', 'level', 'message', 'source', 'mc_url', 'timestamp']))]
+    tsv_list = ["\t".join(['url', 'level', 'message', 'source', 'mc_url', 'timestamp'])]
 
     for url in results:
         if len(results[url]) == 0:
