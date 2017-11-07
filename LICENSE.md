@@ -1,4 +1,4 @@
-**Copyright (c) 2017 Eric Palmer**
+**Copyright (c) 2017 University of Richmond**
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
